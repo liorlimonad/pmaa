@@ -1,0 +1,32 @@
+{
+  "role": "issue_reporter",
+  "flatten_object_type": "issue",
+  "min_support": 0.5,
+  "itemsets_support": 0.9,
+  "max_cardinality": 2,
+  "consider_vacuity": false,
+  "cases": 1436,
+  "events": 16037,
+  "distinct_activities": 34,
+  "constraint_count": 3,
+  "constraints": [
+    {
+      "raw": "Existence1[closed] | |",
+      "template": "Existence1",
+      "activity_a": "closed",
+      "activity_b": ""
+    },
+    {
+      "raw": "Absence2[closed] | |",
+      "template": "Absence2",
+      "activity_a": "closed",
+      "activity_b": ""
+    },
+    {
+      "raw": "Exactly1[closed] | |",
+      "template": "Exactly1",
+      "activity_a": "closed",
+      "activity_b": ""
+    }
+  ]
+}

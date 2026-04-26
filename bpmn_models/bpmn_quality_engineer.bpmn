@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.signavio.com/bpmn20" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath">
+	<bpmn:process id="id4cba2d02-d327-4ddd-b973-3f91176c5720" isClosed="false" isExecutable="false" processType="None">
+		<bpmn:startEvent id="idc9ed8422-bd4c-4984-af76-97ba11536d5f" isInterrupting="true" name="start" parallelMultiple="false">
+			<bpmn:outgoing>id07bfe82b-e094-4877-bc08-c983e557c626</bpmn:outgoing>
+		</bpmn:startEvent>
+		<bpmn:endEvent id="idcc8af628-b353-49e4-8edf-d6643e56589e" name="end">
+			<bpmn:incoming>id078dbe15-1e7c-4c3d-af90-9a45b1827fb0</bpmn:incoming>
+		</bpmn:endEvent>
+		<bpmn:task id="id4a0fff89-ea76-447a-b1e6-ffd1d084c9aa" name="committed">
+			<bpmn:incoming>id07bfe82b-e094-4877-bc08-c983e557c626</bpmn:incoming>
+			<bpmn:outgoing>id078dbe15-1e7c-4c3d-af90-9a45b1827fb0</bpmn:outgoing>
+		</bpmn:task>
+		<bpmn:sequenceFlow id="id078dbe15-1e7c-4c3d-af90-9a45b1827fb0" name="" sourceRef="id4a0fff89-ea76-447a-b1e6-ffd1d084c9aa" targetRef="idcc8af628-b353-49e4-8edf-d6643e56589e"/>
+		<bpmn:sequenceFlow id="id07bfe82b-e094-4877-bc08-c983e557c626" name="" sourceRef="idc9ed8422-bd4c-4984-af76-97ba11536d5f" targetRef="id4a0fff89-ea76-447a-b1e6-ffd1d084c9aa"/>
+	</bpmn:process>
+	<bpmndi:BPMNDiagram id="id419ff011-6de9-4372-9b3b-3e00858a619a" name="diagram">
+		<bpmndi:BPMNPlane bpmnElement="id4cba2d02-d327-4ddd-b973-3f91176c5720" id="id8350b45e-03c5-4752-bec2-65fc244afda8">
+			<bpmndi:BPMNShape bpmnElement="idc9ed8422-bd4c-4984-af76-97ba11536d5f" id="idc9ed8422-bd4c-4984-af76-97ba11536d5f_gui">
+				<omgdc:Bounds height="100" width="100" x="0" y="0"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="idcc8af628-b353-49e4-8edf-d6643e56589e" id="idcc8af628-b353-49e4-8edf-d6643e56589e_gui">
+				<omgdc:Bounds height="100" width="100" x="0" y="0"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="id4a0fff89-ea76-447a-b1e6-ffd1d084c9aa" id="id4a0fff89-ea76-447a-b1e6-ffd1d084c9aa_gui">
+				<omgdc:Bounds height="100" width="100" x="0" y="0"/>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNEdge bpmnElement="id078dbe15-1e7c-4c3d-af90-9a45b1827fb0" id="id078dbe15-1e7c-4c3d-af90-9a45b1827fb0_gui">
+				<omgdi:waypoint x="0" y="0"/>
+				<omgdi:waypoint x="0" y="0"/>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="id07bfe82b-e094-4877-bc08-c983e557c626" id="id07bfe82b-e094-4877-bc08-c983e557c626_gui">
+				<omgdi:waypoint x="0" y="0"/>
+				<omgdi:waypoint x="0" y="0"/>
+			</bpmndi:BPMNEdge>
+		</bpmndi:BPMNPlane>
+	</bpmndi:BPMNDiagram>
+</bpmn:definitions>

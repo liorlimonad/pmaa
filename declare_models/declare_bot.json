@@ -1,0 +1,13 @@
+{
+  "role": "bot",
+  "flatten_object_type": "issue",
+  "min_support": 0.5,
+  "itemsets_support": 0.9,
+  "max_cardinality": 2,
+  "consider_vacuity": false,
+  "cases": 1045,
+  "events": 3394,
+  "distinct_activities": 11,
+  "constraint_count": 0,
+  "constraints": []
+}

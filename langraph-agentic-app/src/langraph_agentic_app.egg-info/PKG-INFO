@@ -1,0 +1,110 @@
+Metadata-Version: 2.4
+Name: langraph-agentic-app
+Version: 0.1.0
+Summary: LangGraph-based GitHub issue operations scaffold grounded in mined repository process artifacts.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: langgraph>=0.2.0
+Requires-Dist: langchain-core>=0.3.0
+Requires-Dist: pydantic>=2.7.0
+Requires-Dist: requests>=2.32.0
+
+# LangGraph Agentic App for GitHub Issue Operations
+
+A starter LangGraph-based multi-agent application scaffold derived from mined process artifacts in this workspace.
+
+## Purpose
+
+This app treats GitHub issue handling as an object-centric orchestration problem over:
+- issues
+- tasks
+- commits
+- users
+- labels
+- reviewers
+- pull requests
+
+It is grounded in the mined process roles:
+- coordination-heavy: `issue_reporter`, `bot`
+- execution-heavy: `contributor`, `feature_developer`, `maintainer`, `devops_engineer`, `quality_engineer`, `technical_writer`
+
+## Current scope
+
+This repository contains:
+- a typed shared state model
+- real GitHub REST integration for issue reads and issue mutations
+- role prompts derived from mined role behaviors
+- LangGraph node functions
+- a top-level graph with conditional routing
+- architecture documentation
+- environment-based configuration loading
+
+By default, write operations run in dry-run mode until configured otherwise.
+
+## Structure
+
+```text
+langraph-agentic-app/
+├── README.md
+├── pyproject.toml
+├── docs/
+│   └── architecture.md
+└── src/
+    └── langraph_agentic_app/
+        ├── __init__.py
+        ├── app.py
+        ├── graph.py
+        ├── nodes.py
+        ├── prompts.py
+        ├── state.py
+        └── tools/
+            ├── __init__.py
+            ├── github_tools.py
+            ├── memory_tools.py
+            └── policy_tools.py
+```
+
+## Installation
+
+```bash
+cd langraph-agentic-app
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+## Configuration
+
+Set environment variables before running:
+
+```bash
+export GITHUB_TOKEN=your_github_token
+export GITHUB_REPO=owner/repo
+export GITHUB_ISSUE_ID=123
+export GITHUB_DRY_RUN=true
+```
+
+Optional:
+- `GITHUB_API_URL` (default: `https://api.github.com`)
+- `GITHUB_TIMEOUT_SECONDS` (default: `20`)
+
+## Run demo
+
+```bash
+cd langraph-agentic-app
+python -m langraph_agentic_app.app
+```
+
+Notes:
+- reads require a valid `GITHUB_TOKEN` and accessible repository
+- mutations respect `GITHUB_DRY_RUN`
+- set `GITHUB_DRY_RUN=false` only when you want live GitHub writes
+
+## Next steps
+
+To productionize further:
+1. connect an LLM runtime
+2. persist state and issue memory
+3. add auth, audit logging, and approval workflows
+4. load mined artifacts into retrieval/policy stores
+5. add richer PR/commit/task linking beyond issue timeline heuristics
