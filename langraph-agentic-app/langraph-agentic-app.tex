@@ -277,37 +277,41 @@ This state-centric design is important because it makes every decision inspectab
 
 A typical execution follows this sequence:
 \begin{enumerate}
-    \item \texttt{ingest\_event}
-    \item \texttt{load\_issue\_context}
-    \item \texttt{classify\_intent\_and\_state}
-    \item \texttt{policy\_guard}
-    \item \texttt{route\_to\_role\_agent}
-    \item role-specific node:
+    \item \texttt{ingest\_event}: initializes processing for a newly observed issue event and places the issue into an initial triage-oriented stage. Conceptually, this is the process entry point of the graph.
+    \item \texttt{load\_issue\_context}: retrieves the issue snapshot and related objects from GitHub so that the rest of the graph can reason over real process context rather than only an issue identifier.
+    \item \texttt{classify\_intent\_and\_state}: derives role hypotheses and a compact summary of the issue. This is the interpretation step that estimates what kind of work the issue appears to require.
+    \item \texttt{policy\_guard}: evaluates lightweight policy and risk considerations, and records declarative or policy-related flags that may affect execution.
+    \item \texttt{route\_to\_role\_agent}: selects one routable role and dispatches control to the corresponding role-realizing agent node.
+    \item role-specific agent node:
     \begin{itemize}
-        \item \texttt{issue\_reporter\_agent}, or
-        \item \texttt{bot\_workflow\_agent}, or
-        \item \texttt{implementation\_agent}, or
-        \item \texttt{quality\_agent}, or
-        \item \texttt{technical\_writer\_agent}
+        \item \texttt{issue\_reporter\_agent}: realizes the issue-reporter role as an agent node focused on clarification, issue summarization, and intake-oriented follow-up.
+        \item \texttt{bot\_workflow\_agent}: realizes the bot role as an agent node focused on low-risk workflow maintenance such as labels and reviewer requests.
+        \item \texttt{implementation\_agent}: realizes the implementation role as an agent node focused on technical execution planning and issue-to-change traceability.
+        \item \texttt{quality\_agent}: realizes the quality role as an agent node focused on validation planning, regression thinking, and quality checks.
+        \item \texttt{technical\_writer\_agent}: realizes the technical-writer role as an agent node focused on documentation-oriented work items and user-facing explanatory artifacts.
     \end{itemize}
-    \item \texttt{human\_approval\_gate}
-    \item \texttt{execute\_actions}
-    \item \texttt{update\_memory\_and\_metrics}
-    \item \texttt{close\_or\_wait}
+    \item \texttt{human\_approval\_gate}: decides whether execution can proceed automatically or whether proposed actions should remain pending for human approval.
+    \item \texttt{execute\_actions}: performs executable low-risk actions when approval conditions allow it, and records them as executed actions in the shared state.
+    \item \texttt{update\_memory\_and\_metrics}: stores memory references and records that the issue has been processed, supporting traceability across runs.
+    \item \texttt{close\_or\_wait}: either closes the issue when the workflow has reached a closure state, or leaves the issue in its resulting stage for future progression.
 \end{enumerate}
+
+Taken together, the node sequence should be understood as a staged control-flow in which early nodes gather and interpret context, middle nodes select and realize a role-specific agent behavior, and later nodes govern safe execution and lifecycle continuation.
 
 \subsection{Routable Roles}
 
-In the current implementation, the effective routable roles are:
+In the current implementation, the effective routable roles are realized as role-specific agent nodes. In other words, a routable role is not merely a label in the state; it is a concrete executable agent node in the graph that is responsible for producing role-appropriate actions.
+
+The effective routable roles are:
 \begin{itemize}
-    \item \texttt{issue\_reporter}
-    \item \texttt{bot}
-    \item \texttt{implementation}
-    \item \texttt{quality}
-    \item \texttt{technical\_writer}
+    \item \texttt{issue\_reporter}: realized by the \texttt{issue\_reporter\_agent} node. This role means an intake- and clarification-oriented agent that helps structure the issue, ask for missing information, and prepare the issue for downstream work.
+    \item \texttt{bot}: realized by the \texttt{bot\_workflow\_agent} node. This role means a workflow-maintenance agent that performs safe coordination actions such as applying labels, routing review, and moving the issue into a managed review state.
+    \item \texttt{implementation}: realized by the \texttt{implementation\_agent} node. This role means an execution-oriented agent that translates an issue into an implementation plan and preserves traceability to tasks, commits, and later repository work.
+    \item \texttt{quality}: realized by the \texttt{quality\_agent} node. This role means a validation-oriented agent that frames what testing, regression checks, or acceptance verification should accompany the issue.
+    \item \texttt{technical\_writer}: realized by the \texttt{technical\_writer\_agent} node. This role means a documentation-oriented agent that prepares README, usage-guide, release-note, or other explanatory documentation actions.
 \end{itemize}
 
-There is also a partial \texttt{devops} hypothesis in the classifier, but it is not fully supported by the final dispatch layer. That means \texttt{devops} is conceptually present in classification logic but not fully implemented as a stable runtime route.
+There is also a partial \texttt{devops} hypothesis in the classifier, but it is not fully supported by the final dispatch layer. That means \texttt{devops} is conceptually present in classification logic but not yet realized as a stable routable agent node in the current graph.
 
 \subsection{Current Routing Heuristics}
 
