@@ -164,6 +164,35 @@ It is also important to clarify why the other mined objects were not chosen as t
 
 Therefore, the issue-centered design should be understood as an object-centric architectural choice rather than a simplification that ignores other objects. The issue is the coordination root, while the other objects remain essential contextual evidence.
 
+\subsection{How Mined DECLARE Constraints Affected the Architecture}
+
+The mined DECLARE models also influenced the concluded architecture, even though the current implementation does not yet contain a full declarative conformance engine. Their main contribution was architectural rather than algorithmic: they motivated the separation between role selection, policy checking, and action execution.
+
+DECLARE mining is concerned with rules about what must, may, or must not happen in relation to activities and lifecycle behavior. In the context of this project, that perspective suggested that a useful agentic application should not only ask ``who should act on this issue?'' but also ``are there process constraints or risk conditions that should restrict what the agent does next?'' This is why the app contains an explicit policy and guard layer rather than allowing every routed role to execute actions immediately.
+
+The architectural manifestations of this DECLARE-inspired thinking include:
+\begin{itemize}
+    \item the presence of a dedicated \texttt{policy\_guard} node,
+    \item state fields such as \texttt{declare\_flags} and \texttt{policy\_flags},
+    \item the use of a \texttt{risk\_score} distinct from routing logic,
+    \item the \texttt{human\_approval\_gate} as a separate checkpoint before execution,
+    \item the distinction between \texttt{proposed\_actions} and \texttt{executed\_actions}.
+\end{itemize}
+
+This means that the architecture was intentionally designed so that an agent can be selected, can propose work, and can still be prevented from acting immediately if policy or declarative conditions suggest caution.
+
+The mined DECLARE outcomes also reinforced the idea that not every role requires the same amount of control structure. For example, sparse or weak declarative findings suggest that some roles are operationally simple or highly repetitive, while stronger role-specific rules suggest a need for more careful gating or lifecycle awareness. This contributed to the idea that some parts of the graph can remain lightweight, while others should be guarded by explicit checks and handoff points.
+
+It is important to note that the current code uses the declarative influence in a simplified way. The app does not yet enforce concrete mined constraints such as exact temporal response patterns or formal existence/absence rules over a long-running event history. Instead, the declarative models affected the architecture by introducing the concept of:
+\begin{itemize}
+    \item conformance-aware checkpoints,
+    \item rule-sensitive execution,
+    \item explainable flags that can block or annotate decisions,
+    \item approval-aware transitions before side effects occur.
+\end{itemize}
+
+A concise interpretation is that BPMN influenced the staged control-flow shape, OCDFG influenced the object-centric state and interactions, and DECLARE influenced the policy-and-constraints layer of the architecture.
+
 \subsection{How OCDFG and BPMN Models Affected Stages and Transitions}
 
 The influence of the mined process models went beyond the choice of which role should handle an issue. In particular, the OCDFG and BPMN artifacts influenced how the application defines stages, transition points, and the separation between coordination work and execution work.
