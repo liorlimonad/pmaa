@@ -1,0 +1,671 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\lstdefinestyle{bashstyle}{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    columns=fullflexible,
+    frame=single,
+    backgroundcolor=\color{gray!5}
+}
+
+\lstdefinestyle{jsonstyle}{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    columns=fullflexible,
+    frame=single,
+    backgroundcolor=\color{gray!5}
+}
+
+\title{LangGraph Agentic App: Summary Report, Architecture, and Evaluation Guide}
+\author{Generated for the PMAA workspace}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Purpose of the Application}
+
+The \texttt{langraph-agentic-app} project is a prototype agentic workflow system for GitHub issue handling. Its goal is to take a GitHub issue as input, interpret the issue in the context of mined software process knowledge, route the issue to an appropriate role-oriented agent, execute safe workflow actions, and return a structured state describing the decision process.
+
+The application is built around the idea that issue handling should not be treated as a generic one-size-fits-all automation problem. Instead, it should be informed by observed process behavior extracted from event logs and object-centric process mining artifacts. In this project, the mined process knowledge was used to define role families, routing priorities, workflow responsibilities, and the kinds of actions each agent is expected to perform.
+
+At runtime, the application:
+\begin{itemize}
+    \item loads a GitHub issue and related context,
+    \item classifies the issue into one or more role hypotheses,
+    \item applies lightweight policy and risk checks,
+    \item routes the issue to a selected agent,
+    \item prepares and executes low-risk actions,
+    \item records the full decision trace in a structured final state.
+\end{itemize}
+
+The result is an interpretable and extensible LangGraph-based workflow engine that bridges process mining outputs with practical GitHub issue triage and orchestration.
+
+\section{How the Application Was Generated from Discovered Artifacts}
+
+\subsection{Process Mining Background}
+
+Before building the application, the workspace produced a set of process-mining artifacts from software repository event data. These artifacts included:
+\begin{itemize}
+    \item object-centric event logs split by role under \texttt{role\_logs/},
+    \item role-specific OCDFG visualizations,
+    \item role-specific markdown process descriptions,
+    \item BPMN discovery outputs,
+    \item DECLARE discovery outputs.
+\end{itemize}
+
+These artifacts were not treated as decorative documentation. They were used as design evidence for the agentic architecture.
+
+\subsection{Role-Derived Design Logic}
+
+The role process descriptions showed that different roles exhibit different operational patterns:
+\begin{itemize}
+    \item \textbf{issue\_reporter}: communication-heavy, intake-oriented, clarification-first behavior,
+    \item \textbf{bot}: repetitive, low-risk workflow maintenance such as labels, comments, and review requests,
+    \item \textbf{feature\_developer}: execution-oriented, commit-centric implementation behavior,
+    \item \textbf{quality\_engineer}: validation-oriented behavior,
+    \item \textbf{technical\_writer}: documentation and explanation-oriented work,
+    \item \textbf{maintainer}, \textbf{contributor}, and \textbf{devops\_engineer}: additional execution or coordination specializations.
+\end{itemize}
+
+The application did not implement every mined role as a separate runtime node. Instead, it consolidated some roles into broader agent families. In particular, roles such as \texttt{feature\_developer} and other execution-oriented contributors were abstracted into a generic \texttt{implementation} agent. This is why the current code routes to \texttt{implementation} rather than directly to \texttt{feature\_developer}.
+
+\subsection{Artifact-to-Architecture Mapping}
+
+The generated architecture used the discovered artifacts in the following way:
+\begin{itemize}
+    \item \textbf{Role process descriptions} informed the definitions of agent responsibilities and prompts.
+    \item \textbf{OCDFG and BPMN outputs} informed the understanding of coordination versus execution patterns.
+    \item \textbf{DECLARE constraints} informed the idea of policy checks and declarative guard flags.
+    \item \textbf{Role-specific logs} justified routing logic based on role behavior rather than only issue metadata.
+\end{itemize}
+
+Thus, the application can be understood as a mined-process-informed orchestration layer for issue handling.
+
+\subsection{How OCDFG Objects Affected the Architecture}
+
+The object-centric models were important not only because they revealed activities, but because they showed how multiple business-relevant objects were connected by the same events. In the mined logs, events often linked an issue to commits, tasks, users, reviewers, comments, labels, or workflow actions. This directly influenced the architecture of the application.
+
+The app was therefore designed around a shared state that stores not only an issue identifier, but also surrounding related objects. This is why the runtime state includes fields such as:
+\begin{itemize}
+    \item issue snapshot,
+    \item related commits,
+    \item pull requests,
+    \item participants,
+    \item reviewers,
+    \item tasks,
+    \item memory references and policy flags.
+\end{itemize}
+
+This design is a direct manifestation of the OCDFG perspective: one should not reason about an issue in isolation if the observed process shows that issue handling is deeply entangled with several interacting object types.
+
+The various mined objects affected the architecture in different ways:
+\begin{itemize}
+    \item \textbf{Issue objects} influenced the decision to make the workflow issue-centric and to use an issue-based shared state as the main process container.
+    \item \textbf{Commit objects} influenced the implementation-oriented idea that work should remain traceable to concrete repository changes and not just issue text.
+    \item \textbf{Task objects} influenced the inclusion of plan-oriented and task-oriented actions, especially in the implementation role.
+    \item \textbf{User and participant objects} influenced the architecture's attention to accountability, reviewers, assignees, and participants in the state.
+    \item \textbf{Review and workflow objects} influenced the bot-oriented actions such as applying labels and requesting reviewers.
+\end{itemize}
+
+In short, the OCDFG object model motivated an architecture in which the agent does not simply classify text, but interprets an issue inside a network of related process objects.
+
+\subsection{Why the App Was Centered on the Issue Object}
+
+Among all mined objects, the \texttt{issue} object was chosen as the center of the application because it was the most suitable orchestration anchor for cross-role automation.
+
+There were several reasons for this decision.
+
+First, the issue was the most stable coordination artifact across roles. The mined process descriptions showed that very different roles---including reporters, bots, maintainers, developers, and documentation-related actors---could all be meaningfully related back to the issue. By contrast, other objects such as commits or tasks were important, but more role-specific or phase-specific.
+
+Second, issues are the natural entry point for GitHub-based workflow automation. In practical terms, GitHub issue events are easy to trigger from, easy to query, and easy to enrich with comments, labels, reviewers, and links to downstream artifacts. This made the issue object the best operational starting point for a LangGraph application.
+
+Third, the issue best captures lifecycle progression at the level of the overall work item. A commit is typically a technical execution artifact. A task may represent a subunit of work. A user is an actor rather than the work item itself. The issue, however, can persist across clarification, triage, implementation planning, documentation, review, and closure. That makes it the best carrier of stage transitions such as:
+\begin{itemize}
+    \item \texttt{needs\_clarification},
+    \item \texttt{needs\_review},
+    \item \texttt{ready\_for\_implementation},
+    \item \texttt{needs\_docs},
+    \item \texttt{needs\_qa}.
+\end{itemize}
+
+Fourth, choosing the issue as the center allowed the app to treat commits, tasks, reviewers, and participants as contextual objects rather than competing process roots. This simplified the architecture while preserving the object-centric richness of the mined process models.
+
+It is also important to clarify why the other mined objects were not chosen as the primary center:
+\begin{itemize}
+    \item \textbf{Commit as center}: too narrow for intake, clarification, review routing, and documentation-oriented flows.
+    \item \textbf{Task as center}: useful for planning, but not always present and less universal than the issue in the mined process.
+    \item \textbf{User as center}: represents the actor, not the evolving work item.
+    \item \textbf{Pull request as center}: too downstream, because many issue-handling stages occur before a pull request exists.
+\end{itemize}
+
+Therefore, the issue-centered design should be understood as an object-centric architectural choice rather than a simplification that ignores other objects. The issue is the coordination root, while the other objects remain essential contextual evidence.
+
+\subsection{How OCDFG and BPMN Models Affected Stages and Transitions}
+
+The influence of the mined process models went beyond the choice of which role should handle an issue. In particular, the OCDFG and BPMN artifacts influenced how the application defines stages, transition points, and the separation between coordination work and execution work.
+
+The OCDFG artifacts highlighted which roles behaved as coordination hubs and which roles behaved as execution specialists. For example, issue-centric and bot-centric views showed repeated patterns around issue updates, labels, comments, and review-related interactions. This contributed to the decision to model explicit coordination stages such as \texttt{needs\_triage}, \texttt{needs\_clarification}, and \texttt{needs\_review}. These are not arbitrary software states; they are abstractions of recurrent coordination patterns visible in the discovered object-centric flows.
+
+The BPMN outputs, although simplified by flattening and role-specific event scope, still suggested an important structural distinction between:
+\begin{itemize}
+    \item intake and interpretation activities,
+    \item workflow routing or review preparation,
+    \item implementation-oriented work,
+    \item specialized downstream work such as documentation or quality assurance.
+\end{itemize}
+
+That distinction is visible in the LangGraph node order. The graph first performs event ingestion and context loading, then classification and policy checks, and only after that transfers control to a role-specific node. This mirrors a BPMN-like separation between early gateway decisions and downstream specialized tasks.
+
+The discovered process models also influenced the concluded transitions in the following concrete ways:
+\begin{itemize}
+    \item \textbf{Clarification transition}: issue-reporter style behavior led to a transition into \texttt{needs\_clarification}, reflecting that some issues require more information before execution can begin.
+    \item \textbf{Review transition}: bot-like coordination patterns led to a transition into \texttt{needs\_review}, reflecting that some issues first enter a workflow-management state rather than an implementation state.
+    \item \textbf{Implementation transition}: execution-oriented process models, especially those associated with contributor and feature-developer behavior, motivated the transition into \texttt{ready\_for\_implementation}.
+    \item \textbf{Documentation transition}: documentation-oriented role interpretations motivated the \texttt{needs\_docs} state.
+    \item \textbf{Quality transition}: quality-oriented process assumptions motivated the \texttt{needs\_qa} state.
+\end{itemize}
+
+In other words, the process models were manifested as stage semantics and handoff semantics. They were not compiled directly into a mined executable BPMN engine, but they did shape the control logic by defining what kinds of intermediate states are meaningful and what kinds of next steps are process-compatible.
+
+A useful way to understand this is the following:
+\begin{itemize}
+    \item the \textbf{OCDFG models} primarily influenced which objects, interactions, and coordination patterns matter,
+    \item the \textbf{BPMN models} primarily influenced the idea of staged progression, explicit handoffs, and role-dependent next steps,
+    \item the \textbf{LangGraph implementation} turned these into state transitions such as \texttt{needs\_review} or \texttt{ready\_for\_implementation}.
+\end{itemize}
+
+Therefore, although the current implementation does not replay discovered BPMN models directly, the mined process structures are present in the graph as abstractions of lifecycle phases, gateways, and handoff points.
+
+\section{Architectural Structure}
+
+\subsection{High-Level Components}
+
+The project is organized as a small Python package under:
+
+\begin{lstlisting}[style=bashstyle]
+langraph-agentic-app/
+  README.md
+  pyproject.toml
+  docs/
+  src/langraph_agentic_app/
+\end{lstlisting}
+
+The key runtime components are:
+\begin{itemize}
+    \item \texttt{app.py}: entry point for running the application,
+    \item \texttt{graph.py}: LangGraph graph assembly,
+    \item \texttt{state.py}: shared state definition,
+    \item \texttt{nodes.py}: executable workflow nodes and routing logic,
+    \item \texttt{prompts.py}: agent prompt definitions,
+    \item \texttt{config.py}: environment-based settings loader,
+    \item \texttt{tools/github\_tools.py}: real GitHub REST API integration,
+    \item \texttt{tools/memory\_tools.py}: similarity retrieval stub,
+    \item \texttt{tools/policy\_tools.py}: lightweight risk and policy logic.
+\end{itemize}
+
+\subsection{State-Centric Execution Model}
+
+The app uses a shared issue-centric state that flows through the graph. The state captures:
+\begin{itemize}
+    \item issue identity and repository,
+    \item issue snapshot,
+    \item related objects,
+    \item role hypotheses,
+    \item policy flags and DECLARE flags,
+    \item proposed and executed actions,
+    \item final routing decision,
+    \item process trace,
+    \item workflow stage.
+\end{itemize}
+
+This state-centric design is important because it makes every decision inspectable after execution.
+
+\subsection{Node Sequence}
+
+A typical execution follows this sequence:
+\begin{enumerate}
+    \item \texttt{ingest\_event}
+    \item \texttt{load\_issue\_context}
+    \item \texttt{classify\_intent\_and\_state}
+    \item \texttt{policy\_guard}
+    \item \texttt{route\_to\_role\_agent}
+    \item role-specific node:
+    \begin{itemize}
+        \item \texttt{issue\_reporter\_agent}, or
+        \item \texttt{bot\_workflow\_agent}, or
+        \item \texttt{implementation\_agent}, or
+        \item \texttt{quality\_agent}, or
+        \item \texttt{technical\_writer\_agent}
+    \end{itemize}
+    \item \texttt{human\_approval\_gate}
+    \item \texttt{execute\_actions}
+    \item \texttt{update\_memory\_and\_metrics}
+    \item \texttt{close\_or\_wait}
+\end{enumerate}
+
+\subsection{Routable Roles}
+
+In the current implementation, the effective routable roles are:
+\begin{itemize}
+    \item \texttt{issue\_reporter}
+    \item \texttt{bot}
+    \item \texttt{implementation}
+    \item \texttt{quality}
+    \item \texttt{technical\_writer}
+\end{itemize}
+
+There is also a partial \texttt{devops} hypothesis in the classifier, but it is not fully supported by the final dispatch layer. That means \texttt{devops} is conceptually present in classification logic but not fully implemented as a stable runtime route.
+
+\subsection{Current Routing Heuristics}
+
+The role classifier is currently heuristic-based. It always starts with:
+\begin{itemize}
+    \item \texttt{issue\_reporter}
+    \item \texttt{bot}
+\end{itemize}
+
+Then it appends additional roles when certain tokens appear:
+\begin{itemize}
+    \item documentation terms route toward \texttt{technical\_writer},
+    \item test or quality terms route toward \texttt{quality},
+    \item deployment or infrastructure terms route toward \texttt{devops},
+    \item \texttt{feature}, \texttt{enhancement}, or a \texttt{bug} label route toward \texttt{implementation}.
+\end{itemize}
+
+This means the current system is keyword-routed rather than semantically routed.
+
+\section{Usage Guidance}
+
+\subsection{Environment Setup}
+
+The application is intended to run from the project environment. It supports live GitHub integration through environment variables such as:
+\begin{itemize}
+    \item \texttt{GITHUB\_TOKEN}
+    \item \texttt{GITHUB\_REPO}
+    \item \texttt{GITHUB\_ISSUE\_ID}
+    \item \texttt{GITHUB\_DRY\_RUN}
+    \item \texttt{GITHUB\_API\_URL}
+    \item \texttt{GITHUB\_TIMEOUT\_SECONDS}
+\end{itemize}
+
+Repository values are normalized so that common formats such as:
+\begin{itemize}
+    \item \texttt{owner/repo}
+    \item \texttt{https://github.com/owner/repo.git}
+    \item \texttt{git@github.com:owner/repo.git}
+\end{itemize}
+are converted to the \texttt{owner/repo} form expected by the GitHub API.
+
+\subsection{Typical Invocation}
+
+A typical invocation is:
+
+\begin{lstlisting}[style=bashstyle]
+/Users/liorlimonad/Documents/pmaa/.venv/bin/python -m langraph_agentic_app.app
+\end{lstlisting}
+
+Before running, the relevant environment variables should be set, for example:
+
+\begin{lstlisting}[style=bashstyle]
+export GITHUB_TOKEN=your_token_here
+export GITHUB_REPO=liorlimonad/pmai
+export GITHUB_ISSUE_ID=1
+export GITHUB_DRY_RUN=false
+\end{lstlisting}
+
+\subsection{What the Application Returns}
+
+The current application prints a Python dictionary representing the final workflow state. This output includes:
+\begin{itemize}
+    \item issue snapshot,
+    \item inferred role hypotheses,
+    \item final routing decision,
+    \item process trace,
+    \item policy and risk assessments,
+    \item proposed and executed actions.
+\end{itemize}
+
+This output is especially useful for debugging and evaluation because it exposes the exact reasoning path used by the graph.
+
+\subsection{How to Observe Stage Transitions in Practice}
+
+At present, each invocation of the application processes one issue snapshot and returns the resulting state after one end-to-end pass through the graph. This means that a single run does not automatically replay a long multi-step lifecycle over time. Instead, multi-stage behavior is demonstrated by rerunning the app after the issue has changed, or by evaluating multiple issues that represent different lifecycle situations.
+
+To observe stage transitions in practice, use the following method:
+\begin{enumerate}
+    \item create or update a GitHub issue so that it clearly matches one workflow situation,
+    \item run the app and record the resulting \texttt{current\_stage}, \texttt{final\_decision}, and \texttt{process\_trace},
+    \item modify the issue title, body, labels, or related workflow context,
+    \item rerun the app,
+    \item compare the outputs as consecutive snapshots of the issue lifecycle.
+\end{enumerate}
+
+The key fields to compare between runs are:
+\begin{itemize}
+    \item \texttt{role\_hypotheses},
+    \item \texttt{final\_decision},
+    \item \texttt{current\_stage},
+    \item \texttt{executed\_actions},
+    \item \texttt{process\_trace}.
+\end{itemize}
+
+This snapshot-based procedure is currently the most realistic tutorial format because the app is not yet wired to GitHub webhooks or a persistent long-running event consumer.
+
+\section{Example Tutorial 1: Evaluation on Issue \#1}
+
+\subsection{Issue Description}
+
+Issue \#1 was a documentation-oriented issue. Its title and body indicated that the project README needed more content to describe the project.
+
+Operationally, the issue represented a request for documentation improvement rather than a code implementation request.
+
+\subsection{How to Run}
+
+Set the issue identifier to \texttt{1} and run the app:
+
+\begin{lstlisting}[style=bashstyle]
+export GITHUB_REPO=liorlimonad/pmai
+export GITHUB_ISSUE_ID=1
+/Users/liorlimonad/Documents/pmaa/.venv/bin/python -m langraph_agentic_app.app
+\end{lstlisting}
+
+\subsection{Observed Outcome}
+
+The app produced a result consistent with the issue content:
+\begin{itemize}
+    \item it loaded the real issue snapshot from GitHub,
+    \item it classified the issue as documentation-oriented,
+    \item it routed the issue to \texttt{technical\_writer},
+    \item it prepared a documentation action,
+    \item it ended in the \texttt{needs\_docs} stage.
+\end{itemize}
+
+The relevant decision summary was:
+\begin{itemize}
+    \item \texttt{final\_decision = technical\_writer}
+    \item \texttt{current\_stage = needs\_docs}
+    \item action type:
+    \begin{itemize}
+        \item \texttt{prepare\_docs\_update}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Why This Result Makes Sense}
+
+The classifier includes explicit triggers for:
+\begin{itemize}
+    \item \texttt{docs}
+    \item \texttt{documentation}
+    \item \texttt{readme}
+\end{itemize}
+
+Since the issue mentioned README content, the technical writer route was activated. This aligned well with the mined process interpretation that documentation work belongs to a specialized communication and artifact-preparation role.
+
+\subsection{How to Interpret the Output}
+
+The tutorial shows that the end-to-end system already works for documentation issues:
+\begin{itemize}
+    \item GitHub connectivity was valid,
+    \item classification logic matched the issue semantics reasonably well,
+    \item agent routing produced an interpretable result,
+    \item the workflow emitted a plausible documentation action.
+\end{itemize}
+
+\section{Example Tutorial 2: Evaluation on Issue \#2}
+
+\subsection{Initial Version of the Issue}
+
+Issue \#2 originally described a basic implementation request: adding a Python hello-world function with no input arguments that prints \texttt{hello world}. The first title was similar to:
+
+\begin{quote}
+\texttt{create hello-world function}
+\end{quote}
+
+while the body described the requested Python implementation.
+
+\subsection{First Run Outcome}
+
+Run the app with issue \#2:
+
+\begin{lstlisting}[style=bashstyle]
+export GITHUB_REPO=liorlimonad/pmai
+export GITHUB_ISSUE_ID=2
+/Users/liorlimonad/Documents/pmaa/.venv/bin/python -m langraph_agentic_app.app
+\end{lstlisting}
+
+The first observed output was:
+\begin{itemize}
+    \item \texttt{role\_hypotheses = ['issue\_reporter', 'bot']}
+    \item \texttt{final\_decision = bot}
+    \item \texttt{current\_stage = needs\_review}
+\end{itemize}
+
+Executed actions were:
+\begin{itemize}
+    \item \texttt{apply\_labels}
+    \item \texttt{request\_reviewers}
+\end{itemize}
+
+\subsection{Why the First Outcome Was Unexpected}
+
+Semantically, the issue was clearly a coding task and should have matched an implementation-oriented role. However, the current classifier does not recognize general programming terms such as:
+\begin{itemize}
+    \item \texttt{create}
+    \item \texttt{add}
+    \item \texttt{function}
+    \item \texttt{python}
+    \item \texttt{implementation}
+\end{itemize}
+
+Instead, it only adds \texttt{implementation} when it sees:
+\begin{itemize}
+    \item \texttt{feature}
+    \item \texttt{enhancement}
+    \item or a \texttt{bug} label
+\end{itemize}
+
+Because none of these triggers were present in the initial issue title or labels, the implementation role was never hypothesized. The router therefore fell back to \texttt{bot}.
+
+\subsection{Revised Version of the Issue}
+
+The title of issue \#2 was then revised to include the word \texttt{feature}, producing a title similar to:
+
+\begin{quote}
+\texttt{create hello-world feature}
+\end{quote}
+
+The body remained essentially the same.
+
+\subsection{Second Run Outcome}
+
+After the title revision, rerunning the application produced:
+\begin{itemize}
+    \item \texttt{role\_hypotheses = ['issue\_reporter', 'bot', 'implementation']}
+    \item \texttt{final\_decision = implementation}
+    \item \texttt{current\_stage = ready\_for\_implementation}
+\end{itemize}
+
+The executed action changed to:
+\begin{itemize}
+    \item \texttt{create\_task\_plan}
+\end{itemize}
+
+\subsection{Why the Second Outcome Changed}
+
+The difference was caused by one word: \texttt{feature}. Once that token appeared in the title, the implementation hypothesis was appended. Since the router prioritizes \texttt{implementation} above \texttt{bot}, the selected role changed.
+
+This tutorial is important because it demonstrates both:
+\begin{itemize}
+    \item that the application can route code-oriented issues to an implementation role, and
+    \item that the current classifier is fragile because it depends on literal keyword triggers instead of deeper intent understanding.
+\end{itemize}
+
+\subsection{Lessons from Issue \#2}
+
+This example reveals a current limitation of the application:
+\begin{itemize}
+    \item the architecture is process-informed,
+    \item but the classifier is still simplistic,
+    \item and therefore semantically similar issues can route differently depending on exact wording.
+\end{itemize}
+
+In other words, the graph structure is stronger than the current intent detector.
+
+\section{Tutorial Proposal: Demonstrating a Multi-Stage Issue Transition}
+
+A useful next tutorial is to demonstrate how one issue can move through several stages across multiple reruns of the app. Because the current implementation is snapshot-based, the tutorial should simulate process progression by editing the issue between runs.
+
+\subsection{Goal of the Tutorial}
+
+The goal is to show that the same issue can occupy different stages such as:
+\begin{itemize}
+    \item \texttt{needs\_clarification},
+    \item \texttt{needs\_review},
+    \item \texttt{ready\_for\_implementation},
+    \item \texttt{needs\_docs},
+    \item \texttt{needs\_qa}.
+\end{itemize}
+
+This does not yet happen automatically as a chained workflow inside one live session. Instead, the transitions are demonstrated by changing the issue so that a new stage becomes the correct process interpretation.
+
+\subsection{Recommended Demonstration Scenario}
+
+A good demonstration issue is a feature request that starts vague and becomes progressively more concrete. The sequence can be:
+
+\begin{enumerate}
+    \item \textbf{Run 1: vague issue intake} \\
+    Create an issue with an underspecified request, for example:
+    \begin{quote}
+    ``Add export support.''
+    \end{quote}
+    This should ideally be interpreted as incomplete intake work and motivate a clarification-oriented handling pattern.
+
+    \item \textbf{Run 2: workflow-managed review state} \\
+    Update the issue with a somewhat clearer request but still frame it as a feature request under triage, for example by adding workflow-relevant labels or wording. The current heuristic implementation may route such a case to \texttt{bot} and produce \texttt{needs\_review}.
+
+    \item \textbf{Run 3: explicit implementation request} \\
+    Revise the title or body to include implementation-signaling wording such as \texttt{feature}, \texttt{enhancement}, or an explicit bug label. This should route the issue into \texttt{implementation} and produce \texttt{ready\_for\_implementation}.
+
+    \item \textbf{Run 4: documentation follow-up} \\
+    Edit the issue so that it now explicitly requests README or documentation changes after implementation. This should activate the \texttt{technical\_writer} route and move the issue into \texttt{needs\_docs}.
+
+    \item \textbf{Run 5: validation-oriented follow-up} \\
+    Add wording about testing, regression, or validation expectations. This should activate \texttt{quality} and move the issue into \texttt{needs\_qa}.
+\end{enumerate}
+
+\subsection{Concrete Tutorial Procedure}
+
+The following procedure can be used against your real GitHub fork or another accessible repository:
+
+\begin{lstlisting}[style=bashstyle]
+export GITHUB_REPO=liorlimonad/pmai
+export GITHUB_ISSUE_ID=2
+/Users/liorlimonad/Documents/pmaa/.venv/bin/python -m langraph_agentic_app.app
+\end{lstlisting}
+
+After each run:
+\begin{enumerate}
+    \item save the printed output to a text file,
+    \item note the values of \texttt{current\_stage} and \texttt{final\_decision},
+    \item edit the GitHub issue in the web UI,
+    \item rerun the command,
+    \item compare the before/after process traces.
+\end{enumerate}
+
+A practical way to keep records is:
+
+\begin{lstlisting}[style=bashstyle]
+/Users/liorlimonad/Documents/pmaa/.venv/bin/python -m langraph_agentic_app.app > run1.txt
+\end{lstlisting}
+
+then update the issue and rerun into \texttt{run2.txt}, \texttt{run3.txt}, and so on.
+
+\subsection{What This Tutorial Demonstrates}
+
+This tutorial demonstrates three important properties of the app:
+\begin{itemize}
+    \item stage assignment is process-informed rather than random,
+    \item changes in issue wording and context alter the interpreted lifecycle state,
+    \item the app can be evaluated as a sequence of state snapshots that approximate a process transition narrative.
+\end{itemize}
+
+\subsection{How to Improve the Tutorial in the Future}
+
+For a stronger demonstration, the app could later be extended so that one run can itself trigger multiple internal transitions. For example:
+\begin{itemize}
+    \item a clarification node could post questions and wait,
+    \item a later webhook event could resume from the stored state,
+    \item the graph could continue into implementation after the issue is updated,
+    \item subsequent events could drive documentation or QA stages automatically.
+\end{itemize}
+
+That future version would more directly resemble mined BPMN-style progression over time. The current tutorial, however, is still valid because it demonstrates how the discovered process stages are manifested as rerunnable issue-state interpretations.
+
+\section{Strengths, Limitations, and Recommended Next Steps}
+
+\subsection{Strengths}
+
+The current project already demonstrates several strengths:
+\begin{itemize}
+    \item integration of mined process knowledge into agent design,
+    \item real GitHub issue loading and workflow execution,
+    \item inspectable state and process trace output,
+    \item modular separation of state, graph, nodes, prompts, config, and tools,
+    \item safe emphasis on low-risk actions and approval-aware execution.
+\end{itemize}
+
+\subsection{Limitations}
+
+At the same time, several limitations remain:
+\begin{itemize}
+    \item role classification is based on narrow heuristics,
+    \item some mined roles are collapsed into generic families rather than first-class agents,
+    \item \texttt{devops} is not fully implemented as a stable routed execution path,
+    \item implementation actions currently produce plans rather than repository mutations or pull requests,
+    \item policy and memory subsystems are still lightweight stubs compared with a production-grade design.
+\end{itemize}
+
+\subsection{Recommended Next Steps}
+
+A natural next iteration would include:
+\begin{itemize}
+    \item richer semantic issue classification,
+    \item explicit first-class routing for mined roles such as \texttt{feature\_developer},
+    \item GitHub comments or pull request generation for selected actions,
+    \item deeper policy checks grounded in discovered declarative constraints,
+    \item repository-aware code and documentation editing workflows.
+\end{itemize}
+
+\section{Conclusion}
+
+The \texttt{langraph-agentic-app} project is a process-informed agentic GitHub issue workflow prototype built from mined software process artifacts. It demonstrates how role-specific process knowledge can be translated into a LangGraph architecture with shared state, routing logic, policy checks, and concrete GitHub-integrated actions.
+
+The application is already capable of reading real issues, selecting plausible role-oriented agents, and exposing its reasoning trace. Its evaluations on issues \#1 and \#2 show both the promise of the design and the current limitations of heuristic routing. As a result, the project serves both as a working prototype and as a strong foundation for a more advanced mined-process-driven agentic development assistant.
+
+\end{document}
+
+% Made with Bob
