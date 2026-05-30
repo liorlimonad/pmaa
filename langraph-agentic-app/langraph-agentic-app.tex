@@ -11,6 +11,8 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{titlesec}
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,shapes.geometric,fit}
 
 \hypersetup{
     colorlinks=true,
@@ -230,6 +232,99 @@ A useful way to understand this is the following:
 Therefore, although the current implementation does not replay discovered BPMN models directly, the mined process structures are present in the graph as abstractions of lifecycle phases, gateways, and handoff points.
 
 \section{Architectural Structure}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    flow/.style={rectangle, rounded corners, draw=black, thick, align=center, minimum width=2.7cm, minimum height=0.9cm, fill=blue!6},
+    role/.style={rectangle, rounded corners, draw=black, thick, align=center, minimum width=2.6cm, minimum height=0.9cm, fill=green!8},
+    guard/.style={diamond, draw=black, thick, align=center, aspect=2, fill=orange!10},
+    store/.style={rectangle, draw=black, dashed, align=center, minimum width=2.8cm, minimum height=0.9cm, fill=gray!8},
+    line/.style={->, thick}
+]
+\node[flow] (ingest) at (0,0) {\texttt{ingest\_event}};
+\node[flow] (load) at (3.6,0) {\texttt{load\_issue\_context}};
+\node[flow] (classify) at (7.2,0) {\shortstack{\texttt{classify\_intent}\\\texttt{and\_state}}};
+\node[flow] (policy) at (10.8,0) {\texttt{policy\_guard}};
+\node[flow] (route) at (14.4,0) {\shortstack{\texttt{route\_to\_role}\\\texttt{\_agent}}};
+
+\node[role] (reporter) at (10.8,-2.4) {\shortstack{\texttt{issue\_reporter}\\\texttt{\_agent}}};
+\node[role] (bot) at (14.4,-2.4) {\shortstack{\texttt{bot\_workflow}\\\texttt{\_agent}}};
+\node[role] (impl) at (18.0,-2.4) {\shortstack{\texttt{implementation}\\\texttt{\_agent}}};
+\node[role] (quality) at (12.6,-4.5) {\texttt{quality\_agent}};
+\node[role] (writer) at (16.2,-4.5) {\shortstack{\texttt{technical\_writer}\\\texttt{\_agent}}};
+
+\node[guard] (approval) at (14.4,-7.0) {\shortstack{human\\approval?}};
+\node[flow] (execute) at (10.5,-9.3) {\texttt{execute\_actions}};
+\node[store] (memory) at (14.4,-9.3) {\shortstack{\texttt{update\_memory}\\\texttt{and\_metrics}}};
+\node[flow] (close) at (18.3,-9.3) {\texttt{close\_or\_wait}};
+
+\draw[line] (ingest) -- (load);
+\draw[line] (load) -- (classify);
+\draw[line] (classify) -- (policy);
+\draw[line] (policy) -- (route);
+
+\draw[line] (route) -- (reporter);
+\draw[line] (route) -- (bot);
+\draw[line] (route) -- (impl);
+\draw[line] (route) -- (quality);
+\draw[line] (route) -- (writer);
+
+\draw[line] (reporter) -- (approval);
+\draw[line] (bot) -- (approval);
+\draw[line] (impl) -- (approval);
+\draw[line] (quality) -- (approval);
+\draw[line] (writer) -- (approval);
+
+\draw[line] (approval) -- (execute);
+\draw[line] (approval) -- (memory);
+\draw[line] (execute) -- (memory);
+\draw[line] (memory) -- (close);
+
+\node[draw=black, dashed, rounded corners, inner sep=6pt, fit=(reporter)(bot)(impl)(quality)(writer)] {};
+\node at (14.4,-5.7) {\scriptsize Role-specific agent nodes};
+\end{tikzpicture}%
+}
+\caption{LangGraph agentic app node architecture. The graph begins with issue ingestion and context loading, routes to one realized role-specific agent node, and then passes through approval, execution, memory, and closure-or-wait handling.}
+\label{fig:agentic-node-architecture}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    artifact/.style={rectangle, rounded corners, draw=black, thick, align=center, minimum width=3.0cm, minimum height=0.9cm, fill=purple!8},
+    design/.style={rectangle, rounded corners, draw=black, thick, align=center, minimum width=3.2cm, minimum height=0.9cm, fill=yellow!12},
+    implbox/.style={rectangle, rounded corners, draw=black, thick, align=center, minimum width=3.3cm, minimum height=0.9cm, fill=green!8},
+    line/.style={->, thick}
+]
+\node[artifact] (ocdfg) at (0,0) {\shortstack{OCDFG models\\objects and interactions}};
+\node[artifact] (bpmn) at (4.2,0) {\shortstack{BPMN models\\stages and handoffs}};
+\node[artifact] (declare) at (8.4,0) {\shortstack{DECLARE models\\constraints and guards}};
+\node[artifact] (desc) at (4.2,-2.3) {\shortstack{Role process\\descriptions}};
+
+\node[design] (state) at (-1.2,-4.8) {\shortstack{Issue-centric shared state\\related objects and traceability}};
+\node[design] (stages) at (4.2,-4.8) {\shortstack{Stage design\\node ordering and transitions}};
+\node[design] (policy2) at (9.6,-4.8) {\shortstack{Policy architecture\\flags, approval, guarded execution}};
+
+\node[implbox] (app) at (4.2,-7.5) {\shortstack{LangGraph agentic app\\graph, nodes, tools, prompts}};
+
+\draw[line] (ocdfg) -- (state);
+\draw[line] (bpmn) -- (stages);
+\draw[line] (declare) -- (policy2);
+\draw[line] (desc) -- (state);
+\draw[line] (desc) -- (stages);
+\draw[line] (desc) -- (policy2);
+
+\draw[line] (state) -- (app);
+\draw[line] (stages) -- (app);
+\draw[line] (policy2) -- (app);
+\end{tikzpicture}
+\caption{Creation process of the agentic application from mined artifacts. OCDFG influenced object-centric state, BPMN influenced stages and transitions, DECLARE influenced guard and policy layers, and role descriptions informed role-agent meaning and specialization.}
+\label{fig:agentic-creation-process}
+\end{figure}
 
 \subsection{High-Level Components}
 

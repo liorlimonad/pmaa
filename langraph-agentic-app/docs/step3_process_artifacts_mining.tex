@@ -1,0 +1,25 @@
+\subsection{Step 3: Process Artifacts Mining}
+
+\begin{enumerate}
+
+    \item \textbf{OCPM / BPMN Process Mining.}
+    The per-role OCEL partitions served as input for two complementary discovery steps, both executed with the \texttt{pm4py} library.
+    Object-Centric Directly-Follows Graphs (OC-DFGs) were computed for each role log, capturing activity sequences together with the multi-typed objects—issues, commits, pull requests, and tasks—co-involved in each event~\cite{notebook:05}.
+    For roles exhibiting sufficient behavioural diversity, notably the \texttt{issue\_reporter} (16{,}037 events, 34 distinct activities) and \texttt{bot} (3{,}394 events, 11 activities), frequency-annotated OC-DFG visualisations were produced and persisted to \texttt{role\_logs/}.
+    Complementing this, imperative BPMN models were derived via the Inductive Miner algorithm: each role log was flattened onto a primary object type, converted to a traditional event log, and the resulting process tree was transformed into a BPMN diagram exported as both a structured \texttt{.bpmn} file and a rendered image~\cite{notebook:08}.
+    Together, these artefacts provide a per-role view of \emph{how} work is carried out, serving as the imperative process layer of the pipeline.
+
+    \item \textbf{LLM Process Elicitation.}
+    To produce human-readable process narratives, each role-specific OCEL file was first analysed programmatically to extract a structured process profile comprising activity frequencies, object-type distributions, directly-follows flow patterns, and event--object interaction counts~\cite{notebook:07}.
+    This structured summary was then submitted to a large language model via a prompt that prescribed a fixed section schema—covering process overview, main activities, object interactions, flow patterns, and a concise business interpretation—ensuring consistent and comparable output across roles.
+    The model generated a comprehensive markdown document for each of the eight roles, grounding its narrative directly in the quantitative patterns extracted from the event log rather than from general domain knowledge alone.
+    The resulting per-role process descriptions were persisted as markdown files in \texttt{role\_logs/} and subsequently used to inform the role-grounding prompts of the agentic framework.
+
+    \item \textbf{Declarative Mining.}
+    Declarative process mining was applied to the role-specific logs to elicit normative behavioural constraints, complementing the imperative models produced in the previous steps~\cite{notebook:09}.
+    Using the \texttt{Declare4Py} library's \texttt{DeclareMiner}, each log was first flattened onto the \texttt{issue} object type to yield a case-centric representation, and constraint discovery was executed with a minimum support threshold of 0.5 and a maximum constraint cardinality of two.
+    Roles exhibiting fewer than two distinct activities—spanning \texttt{contributor}, \texttt{devops\_engineer}, \texttt{feature\_developer}, \texttt{maintainer}, \texttt{quality\_engineer}, and \texttt{technical\_writer}—were excluded from discovery due to insufficient activity diversity for meaningful constraint inference.
+    Of the two eligible roles, the \texttt{issue\_reporter} log yielded three DECLARE constraints (\texttt{Existence1}, \texttt{Absence2}, and \texttt{Exactly1}) centred on the \texttt{closed} activity, encoding a normative expectation that issue closure occurs exactly once per case; the \texttt{bot} log, despite eleven distinct activities, produced no constraints above the support threshold.
+    The discovered models were serialised as JSON artefacts in \texttt{declare\_models/} and subsequently integrated into the agentic framework's policy guard component as runtime behavioural guardrails.
+
+\end{enumerate}
