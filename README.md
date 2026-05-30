@@ -163,13 +163,6 @@ Each role has:
 - [Process Descriptions](role_logs/)
 - [BPMN Models](bpmn_models/)
 
-## 🤝 Contributing
-
-This is a research project. For questions or collaboration:
-
-1. Open an issue
-2. Check existing notebooks and documentation
-
 ## 🙏 Acknowledgments
 
 - Built on the Commitizen project event log
