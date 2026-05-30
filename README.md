@@ -6,7 +6,8 @@ A research project that combines **process mining** with **agentic AI** to disco
 
 This repository implements the approach described in:
 
-**"BPM26_Agent_.pdf"** - A paper on process-mining-driven agentic applications for GitHub issue operations.
+**"Using Process Mining to Generate AI Agents from Software Engineering Process Records"**
+Submitted to: **BPM 2026** (double-blind review)
 
 ## 🎯 Project Overview
 
