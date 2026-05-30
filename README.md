@@ -168,22 +168,13 @@ Each role has:
 This is a research project. For questions or collaboration:
 
 1. Open an issue
-2. Review the paper (BPM26_Agent_.pdf)
-3. Check existing notebooks and documentation
-
-## 📄 License
-
-[Specify your license here]
+2. Check existing notebooks and documentation
 
 ## 🙏 Acknowledgments
 
 - Built on the Commitizen project event log
 - Uses pm4py for process mining
 - Powered by LangGraph for agent orchestration
-
-## 📧 Contact
-
-For questions about this research, please open an issue or contact the repository maintainer.
 
 ---
 
